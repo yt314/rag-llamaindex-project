@@ -1,182 +1,299 @@
-# RAG with LlamaIndex
+<div align="center">
 
-A simple Retrieval-Augmented Generation (RAG) project built with LlamaIndex,
-Cohere (embeddings + LLM) and Pinecone (vector database).
+# 🧠 RAG Assistant for *Spirit of Kiro*
 
-## Phases
+### Ask questions, extract structured JSON, or let a smart router choose the right flow — all over your own documents.
 
-- **Phase 1 — Indexing (`prepare.py`):** loads documents from the
-  `kiro-steering` folder, splits them into chunks, creates Cohere embeddings,
-  and saves them to a Pinecone index. Run this **once** to build the index.
-- **Phase 2 — Q&A app (`app.py`):** a small Gradio web app where you type a
-  question and get an answer based on the already-indexed documents. It reuses
-  the existing Pinecone index and does **not** re-index on every question.
-- **Phase 3 — Event-driven workflow (`workflow.py`):** the question-answer
-  logic is split into clear, ordered steps using LlamaIndex Workflows. The
-  Gradio app now calls this workflow instead of one big function.
-- **Phase 4 — Structured data extraction (`extraction.py`):** instead of a
-  free-text answer, this retrieves relevant chunks and asks the LLM to return
-  a structured **JSON summary** of the project. It is exposed as a second tab
-  in the Gradio app.
-- **Phase 5 — Routing (`router.py`):** a small router reads the user's request
-  and automatically sends it to either the Q&A workflow or the structured
-  extraction. It is exposed as a third "Smart Router" tab.
+A complete, beginner-friendly **Retrieval-Augmented Generation (RAG)** pipeline built step by step:
+from raw documents ➜ vector index ➜ event-driven Q&A ➜ structured extraction ➜ smart routing ➜ a polished web app.
 
-## Phase 3 — How the workflow works
+<br>
 
-The work of answering a question is broken into small **steps**. Each step
-receives an **event**, does one job, updates a shared **state** object
-(`RAGState`), and sends the next event:
+[![Python](https://img.shields.io/badge/Python-3.14+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![LlamaIndex](https://img.shields.io/badge/LlamaIndex-Workflows-7C3AED)](https://docs.llamaindex.ai/)
+[![Cohere](https://img.shields.io/badge/Cohere-Embeddings%20%2B%20LLM-39594D?logo=cohere&logoColor=white)](https://cohere.com/)
+[![Pinecone](https://img.shields.io/badge/Pinecone-Vector%20DB-000000)](https://www.pinecone.io/)
+[![Gradio](https://img.shields.io/badge/Gradio-UI-F97316?logo=gradio&logoColor=white)](https://www.gradio.app/)
+[![uv](https://img.shields.io/badge/managed%20with-uv-DE5FE9)](https://github.com/astral-sh/uv)
 
-```
-StartEvent        -> receive_question   (store the question in the state)
-RetrieveEvent     -> retrieve           (get the top chunks from Pinecone)
-CheckContextEvent -> check_context      (was anything relevant found?)
-      |-- nothing found --> StopEvent    (return a polite "no answer" message)
-      |-- found         --> GenerateEvent
-GenerateEvent     -> generate           (ask the Cohere LLM to write the answer)
-StopEvent         -> final answer returned to the app
-```
+</div>
 
-- **State:** a simple `RAGState` dataclass holding `question`, `chunks`,
-  `context_found`, and `answer`. It is passed from step to step.
-- **Events:** small classes (`RetrieveEvent`, `CheckContextEvent`,
-  `GenerateEvent`) plus the built-in `StartEvent` / `StopEvent`.
-- **Steps:** the methods of `RAGWorkflow`, one per stage above.
+---
 
-Each step prints a short `[workflow] ...` line so you can watch the events
-flow in the terminal. The workflow still reuses the existing Pinecone index
-and never re-indexes documents.
+## 📖 Table of Contents
 
-## Phase 4 — How the structured extraction works
+- [✨ What is this?](#-what-is-this)
+- [🚀 Features](#-features)
+- [🏗️ Architecture](#️-architecture)
+- [🧩 Tech Stack](#-tech-stack)
+- [🗂️ Project Structure](#️-project-structure)
+- [📦 The 5 Phases](#-the-5-phases)
+- [⚡ Quickstart](#-quickstart)
+- [🎮 Usage & Examples](#-usage--examples)
+- [🔑 Environment Variables](#-environment-variables)
+- [🔬 How It Works (Deep Dive)](#-how-it-works-deep-dive)
+- [👩‍💻 Author](#-author)
 
-`extraction.py` turns the documents into a structured JSON object instead of a
-free-text answer:
+---
 
-1. It runs a few targeted queries against Pinecone and merges the unique
-   chunks (so the context covers every field, not just one topic).
-2. It asks the Cohere LLM to return **only** a JSON object, filling in the
-   fields below using **only** the retrieved context (empty string / empty
-   list when something is not found - it does not invent data).
-3. It parses and normalizes the JSON so every field always exists.
+## ✨ What is this?
 
-The extracted fields are:
+**RAG** lets a Large Language Model answer questions about *your* data instead of guessing from its training.
+The documents are turned into numeric **embeddings**, stored in a **vector database**, and the most relevant
+chunks are retrieved and handed to the LLM as context — so answers are **grounded in your documents**.
+
+This project applies that idea to the **Spirit of Kiro** steering documents (an AI-powered infinite-crafting
+workshop game) and grows it into a small but complete product across **five phases**.
 
 ```
-project_name, project_type, main_features, core_game_loop,
-ai_integrations, frontend_technologies, backend_technologies,
-aws_services, development_commands
+Question ─▶ Embed ─▶ Search Pinecone ─▶ Relevant chunks ─▶ LLM ─▶ Grounded answer
 ```
 
-It reuses the retriever and LLM already built in Phase 3, so it does **not**
-open a second Pinecone connection and never re-indexes documents.
+---
 
-### Run / test the extraction from the command line
+## 🚀 Features
+
+| | Feature | Description |
+|---|---------|-------------|
+| 💬 | **Document Q&A** | Ask natural-language questions and get answers grounded in your indexed docs. |
+| ⚙️ | **Event-Driven Workflow** | The Q&A pipeline is split into clear, observable steps using LlamaIndex Workflows. |
+| 📋 | **Structured Extraction** | Turn documents into clean, validated **JSON** (features, tech stack, AWS services…). |
+| 🧭 | **Smart Router** | Automatically sends each request to Q&A *or* extraction — and tells you which it chose. |
+| 🖥️ | **Polished Gradio UI** | A three-tab web app with a clean theme and a custom footer. |
+| 🧪 | **CLI-Testable** | Every phase can be run and tested straight from the terminal. |
+| 🔒 | **Safe Config** | API keys live in `.env` — never hardcoded — with clear errors if one is missing. |
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart LR
+    subgraph Indexing["🏭 Phase 1 — Indexing (run once)"]
+        D[kiro-steering<br/>documents] --> C[Chunk<br/>SentenceSplitter]
+        C --> E[Embed<br/>Cohere]
+        E --> P[(Pinecone<br/>Vector DB)]
+    end
+
+    subgraph App["🖥️ Gradio App"]
+        U[User request] --> R{Smart Router}
+        R -->|qa| W[Event-Driven<br/>Workflow]
+        R -->|extraction| X[Structured<br/>Extraction]
+    end
+
+    W -->|retrieve| P
+    X -->|retrieve| P
+    W --> L[Cohere LLM]
+    X --> L
+    L --> A[💡 Answer / JSON]
+```
+
+---
+
+## 🧩 Tech Stack
+
+| Layer | Technology | Notes |
+|-------|------------|-------|
+| **Orchestration** | [LlamaIndex](https://docs.llamaindex.ai/) | RAG primitives + event-driven **Workflows** |
+| **Embeddings** | Cohere `embed-english-v3.0` | `search_document` for indexing, `search_query` for questions |
+| **LLM** | Cohere `command-a-03-2025` | Generates answers & structured JSON (Chat API) |
+| **Vector DB** | [Pinecone](https://www.pinecone.io/) | Index `kiro`, namespace `kiro-steering` |
+| **UI** | [Gradio](https://www.gradio.app/) | Three-tab web interface |
+| **Tooling** | [uv](https://github.com/astral-sh/uv) | Fast dependency & environment management |
+
+---
+
+## 🗂️ Project Structure
+
+```
+RAG with LlamaIndex/
+├── prepare.py        # Phase 1 — load, chunk, embed & index documents into Pinecone
+├── workflow.py       # Phase 3 — event-driven RAG Q&A workflow (also builds shared retriever + LLM)
+├── extraction.py     # Phase 4 — structured JSON extraction
+├── router.py         # Phase 5 — rule-based router (qa vs extraction)
+├── app.py            # Gradio UI — Q&A · Structured Extraction · Smart Router tabs
+├── kiro-steering/    # Source documents to index
+├── pyproject.toml    # Project metadata & dependencies
+├── requirements.txt  # Plain-pip dependency list
+├── .env              # Your API keys (not committed)
+└── README.md         # You are here ✨
+```
+
+---
+
+## 📦 The 5 Phases
+
+This project was built incrementally — each phase adds one capability **without breaking the previous ones**.
+
+| Phase | File | What it adds | Run it |
+|:----:|------|--------------|--------|
+| **1️⃣ Indexing** | `prepare.py` | Loads, chunks, embeds & stores documents in Pinecone | `uv run prepare.py` |
+| **2️⃣ Q&A App** | `app.py` | A Gradio interface to ask questions | `uv run app.py` |
+| **3️⃣ Workflow** | `workflow.py` | Splits Q&A into observable event-driven steps | `uv run workflow.py "..."` |
+| **4️⃣ Extraction** | `extraction.py` | Returns a structured **JSON** summary | `uv run extraction.py` |
+| **5️⃣ Routing** | `router.py` | Auto-picks Q&A or extraction per request | `uv run router.py "..."` |
+
+✅ All five phases are implemented and working.
+
+---
+
+## ⚡ Quickstart
+
+### 1. Install dependencies
 
 ```bash
-uv run extraction.py
+# Recommended (uv)
+uv sync
+
+# …or with plain pip
+pip install -r requirements.txt
 ```
 
-This prints the structured JSON to the terminal.
+### 2. Add your API keys
 
-### Run the extraction in the app
+Create a `.env` file in the project root:
 
-`uv run app.py` now opens these tabs:
-
-- **Q&A** - the Phase 2/3 question-answer interface.
-- **Structured Extraction** - press submit to get the JSON summary.
-- **Smart Router** - type any request; the router picks the tool for you (Phase 5).
-
-## Phase 5 — How the routing works
-
-`router.py` adds a small decision layer on top of the previous phases:
-
-1. `classify_request(user_request)` looks at the text and returns one of two
-   routes:
-   - `"extraction"` if the request contains an extraction keyword such as
-     *json, structured, extract, fields, project summary, technologies list,
-     aws services list, development commands*.
-   - `"qa"` otherwise.
-2. `answer_with_routing(user_request)` runs the chosen tool (the Q&A workflow
-   or the JSON extraction) and prefixes the answer with a line showing the
-   chosen route, e.g. `Route selected: qa`.
-
-The routing is simple, rule-based keyword matching (no new dependencies, no
-extra LLM call just to decide). It reuses the existing Q&A workflow and
-extraction code without changing them.
-
-### Run / test the router from the command line
-
-```bash
-uv run router.py "What is Spirit of Kiro?"            # -> Route selected: qa
-uv run router.py "Extract the project summary as JSON" # -> Route selected: extraction
+```env
+COHERE_API_KEY=your_cohere_key
+PINECONE_API_KEY=your_pinecone_key
+PINECONE_INDEX_NAME=kiro
 ```
 
-### Run the router in the app
+> 🔐 Keys are read from `.env` at runtime and are **never** hardcoded. A missing key produces a clear, friendly error.
 
-Open the **Smart Router** tab in `uv run app.py`, type any request, and the
-response shows which route was selected.
-
-## Setup
-
-1. Install the dependencies (either option works):
-
-   ```bash
-   uv sync
-   ```
-
-   or, with plain pip:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Create a `.env` file in the project root with your keys:
-
-   ```env
-   COHERE_API_KEY=your_cohere_key
-   PINECONE_API_KEY=your_pinecone_key
-   PINECONE_INDEX_NAME=kiro
-   ```
-
-## Step 1 — Build the index (run once)
+### 3. Build the index (once)
 
 ```bash
 uv run prepare.py
 ```
 
-This reads the documents from `kiro-steering/` and uploads their embeddings to
-Pinecone.
+This reads everything in `kiro-steering/`, splits it into chunks, embeds them with Cohere, and uploads them to Pinecone.
 
-## Step 2 — Run the Gradio Q&A app
+### 4. Launch the app 🎉
 
 ```bash
 uv run app.py
 ```
 
-Gradio prints a local URL (usually http://127.0.0.1:7860). Open it in your
-browser, type a question, and read the answer.
+Open the printed URL (usually **http://127.0.0.1:7860**) and explore the three tabs.
 
-### Example question
+---
 
-> What is the purpose of the kiro steering documents?
+## 🎮 Usage & Examples
 
-The app embeds your question with Cohere, retrieves the most relevant chunks
-from Pinecone, and uses the Cohere LLM to write an answer based on them.
+### 💬 Q&A
 
-### Testing the workflow directly (without the UI)
+> **Q:** *What is the Spirit of Kiro project and its main features?*
+>
+> **A:** Spirit of Kiro is an infinite crafting workshop game that showcases AI-powered game
+> development — featuring infinite item generation, a dynamic crafting system, intelligent
+> appraisal, and real-time multiplayer, powered by AWS Bedrock models.
 
-You can run the Phase 3 workflow straight from the command line and watch the
-event steps print as it runs:
+Run it from the terminal:
 
 ```bash
 uv run workflow.py "What is the Spirit of Kiro project and its main features?"
 ```
 
-## Environment variables
+### 📋 Structured Extraction
 
-The app reads these from `.env` and shows a clear error if any is missing:
+```bash
+uv run extraction.py
+```
 
-- `COHERE_API_KEY` — Cohere API key (used for embeddings and the LLM)
-- `PINECONE_API_KEY` — Pinecone API key
-- `PINECONE_INDEX_NAME` — name of the Pinecone index (e.g. `kiro`)
+```json
+{
+  "project_name": "Spirit of Kiro",
+  "project_type": "infinite crafting workshop game",
+  "main_features": ["Infinite Item Generation", "Dynamic Crafting System", "Intelligent Appraisal", "Real-time Multiplayer"],
+  "ai_integrations": ["Item generation", "Crafting logic", "Item appraisal", "Image generation via Nova Canvas"],
+  "frontend_technologies": ["Vue.js 3", "Pinia", "Vite", "Vue Router", "Vitest"],
+  "backend_technologies": ["Bun WebSocket Server", "AWS SDK", "Sharp", "Redis"],
+  "aws_services": ["Amazon Bedrock", "DynamoDB", "Amazon Cognito", "S3 + CloudFront", "MemoryDB"],
+  "development_commands": ["bun dev", "bun install", "..."]
+}
+```
+
+### 🧭 Smart Router
+
+```bash
+uv run router.py "What is Spirit of Kiro?"             # -> Route selected: qa
+uv run router.py "Extract the project summary as JSON"  # -> Route selected: extraction
+```
+
+The response always begins with the chosen route, e.g. `Route selected: qa`.
+
+---
+
+## 🔑 Environment Variables
+
+| Variable | Required | Description |
+|----------|:--------:|-------------|
+| `COHERE_API_KEY` | ✅ | Cohere key — used for **both** embeddings and the LLM |
+| `PINECONE_API_KEY` | ✅ | Pinecone key — access to your vector database |
+| `PINECONE_INDEX_NAME` | ✅ | Name of the Pinecone index (e.g. `kiro`) |
+
+---
+
+## 🔬 How It Works (Deep Dive)
+
+### ⚙️ Phase 3 — The Event-Driven Workflow
+
+Instead of one big function, answering is broken into **steps** that pass **events** and share a small **state** object (`RAGState`).
+
+```mermaid
+flowchart TD
+    S([StartEvent]) --> RQ[receive_question]
+    RQ -->|RetrieveEvent| RT[retrieve<br/>top-3 from Pinecone]
+    RT -->|CheckContextEvent| CC{check_context<br/>found anything?}
+    CC -->|no| ST1([StopEvent<br/>polite 'no answer'])
+    CC -->|yes, GenerateEvent| GN[generate<br/>Cohere LLM]
+    GN --> ST2([StopEvent<br/>final answer])
+```
+
+- **State** — `RAGState` holds `question`, `chunks`, `context_found`, `answer`.
+- **Events** — `RetrieveEvent`, `CheckContextEvent`, `GenerateEvent` + built-in `StartEvent` / `StopEvent`.
+- **Steps** — methods of `RAGWorkflow`, each printing a `[workflow] …` trace so you can watch the flow live.
+
+### 📋 Phase 4 — Structured Extraction
+
+1. Runs several **targeted queries** and merges the unique chunks (broad coverage of every field).
+2. Asks the LLM to return **only JSON**, using **only** the retrieved context — empty `""`/`[]` when unknown, **never invented**.
+3. **Parses & normalizes** so every expected field always exists.
+
+Extracted fields:
+
+```
+project_name · project_type · main_features · core_game_loop · ai_integrations
+frontend_technologies · backend_technologies · aws_services · development_commands
+```
+
+It reuses the retriever + LLM from Phase 3 — **no second Pinecone connection, no re-indexing**.
+
+### 🧭 Phase 5 — Smart Routing
+
+```mermaid
+flowchart LR
+    Q[User request] --> K{contains an<br/>extraction keyword?}
+    K -->|yes| EX[📋 Structured Extraction]
+    K -->|no| QA[💬 Q&A Workflow]
+```
+
+`classify_request()` returns `"extraction"` when the text mentions keywords like
+*json, structured, extract, fields, project summary, technologies list, aws services list, development commands* —
+otherwise `"qa"`. It's lightweight, **rule-based** keyword matching (no extra LLM call, no new dependencies).
+
+---
+
+## 👩‍💻 Author
+
+<div align="center">
+
+**Created by Yehudit Pollock**
+
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-181717?logo=github&logoColor=white)](https://github.com/yt314/rag-llamaindex-project)
+[![GitHub Profile](https://img.shields.io/badge/GitHub-Profile-181717?logo=github&logoColor=white)](https://github.com/yt314)
+
+<sub>Final project · AI Developer course · Built with LlamaIndex, Cohere, Pinecone & Gradio.</sub>
+
+</div>
