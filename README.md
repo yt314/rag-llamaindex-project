@@ -9,12 +9,7 @@ from raw documents ➜ vector index ➜ event-driven Q&A ➜ structured extracti
 
 <br>
 
-[![Python](https://img.shields.io/badge/Python-3.14+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![LlamaIndex](https://img.shields.io/badge/LlamaIndex-Workflows-7C3AED)](https://docs.llamaindex.ai/)
-[![Cohere](https://img.shields.io/badge/Cohere-Embeddings%20%2B%20LLM-39594D?logo=cohere&logoColor=white)](https://cohere.com/)
-[![Pinecone](https://img.shields.io/badge/Pinecone-Vector%20DB-000000)](https://www.pinecone.io/)
-[![Gradio](https://img.shields.io/badge/Gradio-UI-F97316?logo=gradio&logoColor=white)](https://www.gradio.app/)
-[![uv](https://img.shields.io/badge/managed%20with-uv-DE5FE9)](https://github.com/astral-sh/uv)
+`🐍 Python 3.14+`  ·  `🦙 LlamaIndex`  ·  `🔮 Cohere`  ·  `🌲 Pinecone`  ·  `🎨 Gradio`  ·  `⚡ uv`
 
 </div>
 
@@ -291,8 +286,7 @@ otherwise `"qa"`. It's lightweight, **rule-based** keyword matching (no extra LL
 
 **Created by Yehudit Pollock**
 
-[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-181717?logo=github&logoColor=white)](https://github.com/yt314/rag-llamaindex-project)
-[![GitHub Profile](https://img.shields.io/badge/GitHub-Profile-181717?logo=github&logoColor=white)](https://github.com/yt314)
+📦 [GitHub Repository](https://github.com/yt314/rag-llamaindex-project) &nbsp;·&nbsp; 👤 [GitHub Profile](https://github.com/yt314)
 
 <sub>Final project · AI Developer course · Built with LlamaIndex, Cohere, Pinecone & Gradio.</sub>
 
