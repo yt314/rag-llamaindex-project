@@ -280,6 +280,12 @@ otherwise `"qa"`. It's lightweight, **rule-based** keyword matching (no extra LL
 
 ---
 
+## 📄 License
+
+Released under the [MIT License](LICENSE) — free to use, modify, and share.
+
+---
+
 ## 👩‍💻 Author
 
 <div align="center">

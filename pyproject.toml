@@ -1,7 +1,7 @@
 [project]
 name = "rag-with-llamaindex"
 version = "0.1.0"
-description = "Add your description here"
+description = "A beginner-friendly RAG pipeline (LlamaIndex + Cohere + Pinecone) with a Gradio app for Q&A, structured JSON extraction, and smart routing."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
