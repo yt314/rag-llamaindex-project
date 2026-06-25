@@ -30,9 +30,44 @@ from router import answer_with_routing
 CUSTOM_CSS = """
 #app-header { text-align: center; margin-bottom: 4px; }
 #app-subtitle { text-align: center; color: #6b7280; margin-top: 0; }
-#app-footer { text-align: center; color: #9ca3af; font-size: 0.9em; margin-top: 8px; }
+
+/* My custom footer: a clean centered card, sitting just ABOVE the default footer. */
+#app-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 44px;            /* leaves room for the default footer below */
+    z-index: 1000;
+    width: max-content;
+    max-width: 90%;
+    margin: 0 auto;
+    text-align: center;
+    color: #4b5563;
+    font-size: 0.95em;
+    line-height: 1.5;
+    padding: 12px 28px;
+    background: var(--background-fill-secondary, #f9fafb);
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+#app-footer strong { font-weight: 600; font-size: 1.1em; color: #111827; }
 #app-footer a { color: #6b7280; text-decoration: none; }
 #app-footer a:hover { text-decoration: underline; }
+
+/* The default Gradio footer: fixed at the very bottom, UNDER my footer. */
+footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    padding: 6px 0;
+    background: var(--body-background-fill, #ffffff);
+}
+
+/* Make room so the two fixed footers never cover the tabs or outputs. */
+.gradio-container { padding-bottom: 170px !important; }
 """
 
 
@@ -86,10 +121,9 @@ with gr.Blocks(title="RAG Assistant for Spirit of Kiro") as demo:
             router_button.click(fn=answer_with_routing, inputs=router_input, outputs=router_output)
             router_input.submit(fn=answer_with_routing, inputs=router_input, outputs=router_output)
 
-    # ----- Footer -----
-    gr.Markdown("---")
+    # ----- Footer (fixed at the bottom via CSS) -----
     gr.Markdown(
-        "Created by Yehudit Pollock  \n"
+        "**Created by Yehudit Pollock**  \n"
         "[GitHub Repository](https://github.com/yt314/rag-llamaindex-project) "
         "&nbsp;|&nbsp; "
         "[GitHub Profile](https://github.com/yt314)",
