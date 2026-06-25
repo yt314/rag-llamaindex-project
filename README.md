@@ -14,6 +14,10 @@ Cohere (embeddings + LLM) and Pinecone (vector database).
 - **Phase 3 — Event-driven workflow (`workflow.py`):** the question-answer
   logic is split into clear, ordered steps using LlamaIndex Workflows. The
   Gradio app now calls this workflow instead of one big function.
+- **Phase 4 — Structured data extraction (`extraction.py`):** instead of a
+  free-text answer, this retrieves relevant chunks and asks the LLM to return
+  a structured **JSON summary** of the project. It is exposed as a second tab
+  in the Gradio app.
 
 ## Phase 3 — How the workflow works
 
@@ -40,6 +44,44 @@ StopEvent         -> final answer returned to the app
 Each step prints a short `[workflow] ...` line so you can watch the events
 flow in the terminal. The workflow still reuses the existing Pinecone index
 and never re-indexes documents.
+
+## Phase 4 — How the structured extraction works
+
+`extraction.py` turns the documents into a structured JSON object instead of a
+free-text answer:
+
+1. It runs a few targeted queries against Pinecone and merges the unique
+   chunks (so the context covers every field, not just one topic).
+2. It asks the Cohere LLM to return **only** a JSON object, filling in the
+   fields below using **only** the retrieved context (empty string / empty
+   list when something is not found - it does not invent data).
+3. It parses and normalizes the JSON so every field always exists.
+
+The extracted fields are:
+
+```
+project_name, project_type, main_features, core_game_loop,
+ai_integrations, frontend_technologies, backend_technologies,
+aws_services, development_commands
+```
+
+It reuses the retriever and LLM already built in Phase 3, so it does **not**
+open a second Pinecone connection and never re-indexes documents.
+
+### Run / test the extraction from the command line
+
+```bash
+uv run extraction.py
+```
+
+This prints the structured JSON to the terminal.
+
+### Run the extraction in the app
+
+`uv run app.py` now opens **two tabs**:
+
+- **Q&A** - the Phase 2/3 question-answer interface.
+- **Structured Extraction** - press submit to get the JSON summary.
 
 ## Setup
 
