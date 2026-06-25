@@ -11,6 +11,35 @@ Cohere (embeddings + LLM) and Pinecone (vector database).
 - **Phase 2 — Q&A app (`app.py`):** a small Gradio web app where you type a
   question and get an answer based on the already-indexed documents. It reuses
   the existing Pinecone index and does **not** re-index on every question.
+- **Phase 3 — Event-driven workflow (`workflow.py`):** the question-answer
+  logic is split into clear, ordered steps using LlamaIndex Workflows. The
+  Gradio app now calls this workflow instead of one big function.
+
+## Phase 3 — How the workflow works
+
+The work of answering a question is broken into small **steps**. Each step
+receives an **event**, does one job, updates a shared **state** object
+(`RAGState`), and sends the next event:
+
+```
+StartEvent        -> receive_question   (store the question in the state)
+RetrieveEvent     -> retrieve           (get the top chunks from Pinecone)
+CheckContextEvent -> check_context      (was anything relevant found?)
+      |-- nothing found --> StopEvent    (return a polite "no answer" message)
+      |-- found         --> GenerateEvent
+GenerateEvent     -> generate           (ask the Cohere LLM to write the answer)
+StopEvent         -> final answer returned to the app
+```
+
+- **State:** a simple `RAGState` dataclass holding `question`, `chunks`,
+  `context_found`, and `answer`. It is passed from step to step.
+- **Events:** small classes (`RetrieveEvent`, `CheckContextEvent`,
+  `GenerateEvent`) plus the built-in `StartEvent` / `StopEvent`.
+- **Steps:** the methods of `RAGWorkflow`, one per stage above.
+
+Each step prints a short `[workflow] ...` line so you can watch the events
+flow in the terminal. The workflow still reuses the existing Pinecone index
+and never re-indexes documents.
 
 ## Setup
 
@@ -58,6 +87,15 @@ browser, type a question, and read the answer.
 
 The app embeds your question with Cohere, retrieves the most relevant chunks
 from Pinecone, and uses the Cohere LLM to write an answer based on them.
+
+### Testing the workflow directly (without the UI)
+
+You can run the Phase 3 workflow straight from the command line and watch the
+event steps print as it runs:
+
+```bash
+uv run workflow.py "What is the Spirit of Kiro project and its main features?"
+```
 
 ## Environment variables
 
