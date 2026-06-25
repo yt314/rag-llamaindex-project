@@ -18,6 +18,9 @@ Cohere (embeddings + LLM) and Pinecone (vector database).
   free-text answer, this retrieves relevant chunks and asks the LLM to return
   a structured **JSON summary** of the project. It is exposed as a second tab
   in the Gradio app.
+- **Phase 5 — Routing (`router.py`):** a small router reads the user's request
+  and automatically sends it to either the Q&A workflow or the structured
+  extraction. It is exposed as a third "Smart Router" tab.
 
 ## Phase 3 — How the workflow works
 
@@ -78,10 +81,41 @@ This prints the structured JSON to the terminal.
 
 ### Run the extraction in the app
 
-`uv run app.py` now opens **two tabs**:
+`uv run app.py` now opens these tabs:
 
 - **Q&A** - the Phase 2/3 question-answer interface.
 - **Structured Extraction** - press submit to get the JSON summary.
+- **Smart Router** - type any request; the router picks the tool for you (Phase 5).
+
+## Phase 5 — How the routing works
+
+`router.py` adds a small decision layer on top of the previous phases:
+
+1. `classify_request(user_request)` looks at the text and returns one of two
+   routes:
+   - `"extraction"` if the request contains an extraction keyword such as
+     *json, structured, extract, fields, project summary, technologies list,
+     aws services list, development commands*.
+   - `"qa"` otherwise.
+2. `answer_with_routing(user_request)` runs the chosen tool (the Q&A workflow
+   or the JSON extraction) and prefixes the answer with a line showing the
+   chosen route, e.g. `Route selected: qa`.
+
+The routing is simple, rule-based keyword matching (no new dependencies, no
+extra LLM call just to decide). It reuses the existing Q&A workflow and
+extraction code without changing them.
+
+### Run / test the router from the command line
+
+```bash
+uv run router.py "What is Spirit of Kiro?"            # -> Route selected: qa
+uv run router.py "Extract the project summary as JSON" # -> Route selected: extraction
+```
+
+### Run the router in the app
+
+Open the **Smart Router** tab in `uv run app.py`, type any request, and the
+response shows which route was selected.
 
 ## Setup
 
